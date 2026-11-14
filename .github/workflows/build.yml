@@ -1,0 +1,38 @@
+# Builds sp500-breakout.exe from sp500-breakout.zip (which must sit in the repo's top folder).
+name: Build Windows exe
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Unzip the project
+        shell: pwsh
+        run: |
+          Expand-Archive -Path sp500-breakout.zip -DestinationPath _build
+          Get-ChildItem _build/sp500-breakout
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build release exe
+        shell: pwsh
+        working-directory: _build/sp500-breakout
+        run: cargo build --release
+
+      - name: Collect files
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path dist | Out-Null
+          Copy-Item _build/sp500-breakout/target/release/sp500-breakout.exe dist/
+          Copy-Item _build/sp500-breakout/config.toml dist/
+          Copy-Item _build/sp500-breakout/.env.example dist/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sp500-breakout-windows
+          path: dist/
